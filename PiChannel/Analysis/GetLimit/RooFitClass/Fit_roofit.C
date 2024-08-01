@@ -1,0 +1,102 @@
+//////////////////////////////////////////////////////////////////////
+//
+//
+//  Example of how to use the RooTauLeptonInvisible class
+//
+//  Author: Eduard De La Cruz Burelo, CINVESTAV IPN, Mexico, July 2019
+//
+//
+///////////////////////////////////////////////////////////////////////
+#include <TF1.h>
+#include <TFile.h>
+#include <TH1F.h>
+
+using namespace RooFit;
+
+#include "RooTauLeptonInvisible.h"
+//Adding library: make changes accordingly.
+#pragma cling load("/home/belle2/johancol/tau3x1/RooFitClass/RooTauLeptonInvisible.so"):
+
+// This is to use belle2 style plots, make changes as needed
+//#include "/home/eduard/work/BelleII/belle2style/Belle2Labels.h"
+//#include "/home/eduard/work/BelleII/belle2style/Belle2Style.h"
+//#include "/home/eduard/work/BelleII/belle2style/Belle2Style.C"
+//#include "/home/eduard/work/BelleII/belle2style/Belle2Utils.C"
+//#include "/home/eduard/work/BelleII/belle2style/Belle2Labels.C"
+
+//#ifdef __CINT__
+//gROOT->LoadMacro("/home/eduard/work/BelleII/belle2style/Belle2Style.C");
+//gROOT->LoadMacro("/home/eduard/work/BelleII/belle2style/Belle2Labels.C");
+//#endif
+
+
+void Fit_roofit()
+{
+  RooRealVar x("x", "x", 0.0,2.0);
+  //x.setBins(250);
+
+  RooRealVar m("m","m",1.4,-1.0,1.7); //Mass of the alpha boson set to 1.0 
+  RooTauLeptonInvisible Pdf_lb("Pdf_lb","Pdf 2 body",x,m);
+  RooTauLeptonInvisible Pdf_Invisible("Pdf_Invisible","Pdf 3 body",x);
+  
+  RooRealVar f("f", "f",0.5,0,1);	// fraction of SM set to 0.5	     
+  RooAddPdf Global("Global","Global",RooArgList(Pdf_Invisible,Pdf_lb),RooArgList(f));
+
+  m.setVal(1.4);
+  //fsm.setVal(0.9);
+  
+  RooDataHist* data1 = Global.generateBinned(x,100000);  //Toy data
+
+  TH1 *h_data = data1->createHistogram("h_data", x);
+    
+  h_data->Smooth();
+
+  RooDataHist data("data", "data", RooArgList(x), h_data); 
+
+  RooFitResult *fit = Global.fitTo(data, Save(kTRUE), Strategy(0), NumCPU(4));
+
+
+  fit->Print("v");
+
+  
+  Int_t cSizeX = 600;
+  Int_t cSizeY = 400;
+  TCanvas *c6 = new TCanvas("c6","c6",cSizeX,cSizeY);
+  c6->cd();
+
+  RooPlot* frame = x.frame(0.,2.0,100);
+  data.plotOn(frame, Name("data"));
+  Global.paramOn(frame,Layout(0.65,0.95,0.95));
+  Global.plotOn(frame, Name("model"),LineStyle(1));
+  Global.plotOn(frame, Components(Pdf_Invisible), LineStyle(2));
+  Global.plotOn(frame, Components(Pdf_lb), LineStyle(7));
+  frame->Draw();
+
+  //Double_t chi2 = frame->chiSquare("model", "data", 5);
+
+  //cout<<"Chi2/dof: "<<chi2<<endl;
+
+  //string chi2Text = "#chi^{2}/dof = " + to_string(chi2);
+  //myText(0.62, 0.5, 1, chi2Text.c_str());
+    
+  // RooPlot* frame3 = x.frame(0.,2.5,100);
+  // data->plotOn(frame3, Name("x = E/2m"));
+  // Global.paramOn(frame3,Layout(0.65,0.95,0.95));
+  // Global.plotOn(frame3, Name("model"),LineStyle(1), LineColor(kBlue-3),FillStyle(1001),FillColor(kBlue-3), DrawOption("F"));
+  // Global.plotOn(frame3, Components(Pdf_Invisible), LineStyle(1), LineColor(29),FillStyle(1001),FillColor(29),DrawOption("F"));
+  // Global.plotOn(frame3, Components(Pdf_lb), LineStyle(2), LineColor(kRed-3));
+  // Global.plotOn(frame3, Name("model"),LineStyle(1), LineColor(1));
+  // data->plotOn(frame3, Name("x = E/2m"));
+  // frame3->Draw();
+
+  // Uncomment for a MC study
+  //RooMCStudy* mcstudy = new RooMCStudy(Global,x,Binned(kTRUE),Silence(),FitOptions(Save(kTRUE),PrintEvalErrors(0))) ;
+  //mcstudy->generateAndFit(1000,10000) ;
+  // Make plots of the distributions of mean, the error on mean and the pull of mean
+  //RooPlot* frame1 = mcstudy->plotParam(mb,Bins(40)) ;
+  //RooPlot* frame2 = mcstudy->plotError(mb,Bins(40)) ;
+  //RooPlot* frame21 = mcstudy->plotPull(mb,Bins(40),FitGauss(kTRUE)) ;
+  // Plot distribution of minimized likelihood
+  //RooPlot* frame4 = mcstudy->plotNLL(Bins(40)) ;
+
+}

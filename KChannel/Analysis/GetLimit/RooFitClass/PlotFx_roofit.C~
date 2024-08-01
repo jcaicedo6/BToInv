@@ -1,0 +1,67 @@
+//////////////////////////////////////////////////////////////////////
+//
+//
+//  Example of how to use the RooTauLeptonInvisible class
+//
+//  Author: Eduard De La Cruz Burelo, CINVESTAV IPN, Mexico, July 2019
+//
+//
+///////////////////////////////////////////////////////////////////////
+#include <TF1.h>
+#include <TFile.h>
+#include <TH1F.h>
+
+using namespace RooFit;
+
+#include "RooTauLeptonInvisible.h"
+//Adding library: make changes accordingly.
+#pragma cling load("/home/eduard/work/BelleII/development/work-repo/roofitclass/RooTauLeptonInvisible.so"):
+
+// This is to use belle2 style plots, make changes as needed
+#include "/home/eduard/work/BelleII/belle2style/Belle2Labels.h"
+#include "/home/eduard/work/BelleII/belle2style/Belle2Style.h"
+#include "/home/eduard/work/BelleII/belle2style/Belle2Style.C"
+#include "/home/eduard/work/BelleII/belle2style/Belle2Utils.C"
+#include "/home/eduard/work/BelleII/belle2style/Belle2Labels.C"
+
+#ifdef __CINT__
+  gROOT->LoadMacro("/home/eduard/work/BelleII/belle2style/Belle2Style.C");
+  gROOT->LoadMacro("/home/eduard/work/BelleII/belle2style/Belle2Labels.C");
+#endif
+
+
+
+
+
+
+void PlotFx_roofit()
+{
+  Int_t nplots = 6;
+  RooRealVar m("m",0,0.0,1.7);
+  RooRealVar x("x", "x", 0.0,2.0);
+  RooTauLeptonInvisible Pdf_lb("Pdf_lb","Pdf 2 body",x,m);;
+
+  Int_t cSizeX = 600;
+  Int_t cSizeY = 400;
+  TCanvas *c6 = new TCanvas("c6","c6",cSizeX,cSizeY);
+  c6->cd();
+
+  Double_t presc = 1.E-2; 
+  RooPlot* frame = x.frame(0.,2.0,100);
+  m.setVal(1.4);
+  Pdf_lb.plotOn(frame, Name("model"),LineStyle(1), LineWidth(2),RooFit::Precision(presc));
+  m.setVal(1.2);
+  Pdf_lb.plotOn(frame, Name("model"),LineStyle(1),LineWidth(2),RooFit::Precision(presc));
+  m.setVal(0.8);
+  Pdf_lb.plotOn(frame, Name("model"),LineStyle(1),LineWidth(2),RooFit::Precision(presc));
+  m.setVal(0.4);
+  Pdf_lb.plotOn(frame, Name("model"),LineStyle(1),LineWidth(2),RooFit::Precision(presc));
+  m.setVal(0.2);
+  Pdf_lb.plotOn(frame, Name("model"),LineStyle(1),LineWidth(2),RooFit::Precision(presc));
+  m.setVal(0.0);
+  Pdf_lb.plotOn(frame, Name("model"),LineStyle(1),LineWidth(2),RooFit::Precision(presc));
+    
+  frame->Draw();
+
+
+}

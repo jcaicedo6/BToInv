@@ -1,0 +1,86 @@
+#include "RooRealVar.h"
+#include "RooDataSet.h"
+#include "RooGaussian.h"
+#include "RooConstVar.h"
+#include "RooExponential.h"
+#include "RooEffProd.h"
+#include "RooFormulaVar.h"
+#include "TCanvas.h"
+#include "TAxis.h"
+#include "RooPlot.h"
+using namespace RooFit ;
+
+
+void Fit_roofit_eff()
+{
+  // D e f i n e   o b s e r v a b l e s   a n d   pdf
+  // ---------------------------------------------------------------
+  R__ADD_INCLUDE_PATH("/home/johancol/Johan/tau3x1/RooFitClass/");
+  R__LOAD_LIBRARY(RooTauLeptonInvisible.so);
+
+  RooRealVar x("x", "x", 0.0,2.5);
+  RooRealVar mb("mb","mb",1.0,-1.0,1.7);
+  RooTauLeptonInvisible Pdf_lb("Pdf_lb","Pdf 2 body",x,mb);
+  RooTauLeptonInvisible Pdf_Invisible("Pdf_Invisible","Pdf 3 body",x);
+  
+  RooRealVar fsm("fsm", "fsm",0.5,0,1);		     
+  RooAddPdf Global("Global","Global",RooArgList(Pdf_Invisible,Pdf_lb),RooArgList(fsm));
+
+  // D e f i n e   e f f i c i e n c y   f u n c t i o n
+  // ---------------------------------------------------
+   
+  // Use error function to simulate turn-on slope
+  RooFormulaVar eff("eff","0.2*(TMath::Erf(10.0*(x-0.2))+1)",x) ;
+
+
+
+   // D e f i n e   p d f   w i t h   e f f i c i e n c y 
+   // ---------------------------------------------------------------
+
+   // Multiply pdf(t) with efficiency in t
+   //RooEffProd modelEff("modelEff","model with efficiency",Pdf_Invisible,eff) ;
+  //RooEffProd modelEff("modelEff","model with efficiency",Pdf_lb,eff) ;
+   RooEffProd modelEff("modelEff","model with efficiency",Global,eff) ;
+
+   mb.setVal(0.0);
+   fsm.setVal(0.7);
+
+   mb.setConstant(kTRUE);
+   
+   // P l o t   e f f i c i e n c y ,   p d f  
+   // ----------------------------------------
+
+   RooPlot* frame1 = x.frame(Title("Efficiency")) ;
+   eff.plotOn(frame1,LineColor(kRed)) ;
+
+   RooPlot* frame2 = x.frame(Title("Pdf with and without efficiency")) ;
+
+   //Pdf_lb.plotOn(frame2,LineStyle(kDashed)) ;
+   Global.plotOn(frame2,LineStyle(kDashed)) ;
+   modelEff.plotOn(frame2, NumCPU(4)) ;
+
+  
+   // G e n e r a t e   t o y   d a t a ,   f i t   m o d e l E f f   t o   d a t a
+   // ------------------------------------------------------------------------------
+
+   // Generate events. If the input pdf has an internal generator, the internal generator
+   // is used and an accept/reject sampling on the efficiency is applied. 
+   //RooDataSet* data = modelEff.generate(x,10000) ;
+   RooDataHist* data = modelEff.generateBinned(x,10000) ;
+
+   // Fit pdf. The normalization integral is calculated numerically. 
+   modelEff.fitTo(*data, NumCPU(4)) ;
+
+   // Plot generated data and overlay fitted pdf
+   RooPlot* frame3 = x.frame(Title("Fitted pdf with efficiency")) ;
+   data->plotOn(frame3) ;
+   modelEff.plotOn(frame3,NumCPU(4)) ;
+
+   
+   TCanvas* c = new TCanvas("rf703_effpdfprod","rf703_effpdfprod",1200,400) ;
+   c->Divide(3) ;
+   c->cd(1) ; gPad->SetLeftMargin(0.15) ; frame1->GetYaxis()->SetTitleOffset(1.4) ; frame1->Draw() ;
+   c->cd(2) ; gPad->SetLeftMargin(0.15) ; frame2->GetYaxis()->SetTitleOffset(1.6) ; frame2->Draw() ;
+   c->cd(3) ; gPad->SetLeftMargin(0.15) ; frame3->GetYaxis()->SetTitleOffset(1.6) ; frame3->Draw() ;
+
+}
